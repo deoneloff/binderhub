@@ -1,0 +1,31 @@
+config:
+  BinderHub:
+    auth_enabled: true
+    hub_url: https://jhub2.devweb.rug.nl
+    use_registry: true
+    image_prefix: deoneloff/binder-dev-
+  GitHubRepoProvider:
+    access_token: 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
+
+service:
+  type: ClusterIP
+
+jupyterhub:
+  proxy:
+    service:
+      type: ClusterIP
+  ingress:
+    enabled: true
+    hosts:
+      - jhub2.devweb.rug.nl
+    # annotations:
+    #   kubernetes.io/ingress.class: nginx
+    #   kubernetes.io/tls-acme: "true"
+    #   cert-manager.io/issuer: letsencrypt-production
+    #   https:
+    #     enabled: true
+    #     type: nginx
+    # tls:
+    #    - secretName: <jupyterhub-URL-with-dashes-instead-of-dots>-tls
+    #      hosts:
+    #       - https://jhub1.devweb.rug.nl

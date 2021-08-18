@@ -1,0 +1,123 @@
+# helm install binderhub jupyterhub/binderhub --version=0.2.0-n652.h034430a -f values.yaml
+
+config:
+  BinderHub:
+    auth_enabled: true
+    hub_url: https://jhub2.devweb.rug.nl
+    use_registry: true
+    image_prefix: deoneloff/binder-dev-
+  GitHubRepoProvider:
+    access_token: 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
+
+jupyterhub:
+  cull:
+    # don't cull authenticated users
+    users: False
+  custom:
+    binderauth_enabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - jhub2.devweb.rug.nl
+  proxy:
+    secretToken: 4568533b8e94493869e9d66f19249d6ef998cb87ffebcad0aa70b32bcc4d20ff
+    service:
+      type: ClusterIP
+  hub:
+    config:
+      JupyterHub:
+        authenticator_class: ldapauthenticator.LDAPAuthenticator
+        spawner_class: kubespawner.KubeSpawner
+      Spawner:
+        http_timeout: 120
+      LDAPAuthenticator:
+        server_address: asds.id.rug.nl
+        server_port: 636
+        bind_dn_template:
+          - cn={username},ou=users,ou=multiservices,o=asds
+        use_ssl: True
+        user_attribute: uid
+      Authenticator:
+        admin_users:
+          - p304002
+      KubeSpawner:
+        profile_list: [
+        {
+          'display_name': 'Default Python',
+          'slug': 'training-python',
+          'default': True,
+          'kubespawner_override': {
+              'image': 'jupyter/minimal-notebook',
+              'cpu_limit': 2,
+              'mem_limit': '8G',
+          }
+      }, {
+          'display_name': 'DataScience - Small instance',
+          'slug': 'training-datascience',
+          'kubespawner_override': {
+              'image': 'jupyter/datascience-notebook',
+              'cpu_limit': 4,
+              'mem_limit': '8G',
+          }
+      }, {
+          'display_name': 'DataScience - Bigger instance',
+          'slug': 'datascience-bigger',
+          'kubespawner_override': {
+              'image': 'jupyter/datascience-notebook',
+              'cpu_limit': 4,
+              'mem_limit': '12G',
+          }
+      }, 
+        ]
+          
+    db:
+      type: sqlite-memory
+
+  singleuser:
+  # to make notebook servers aware of hub
+    cmd: jupyterhub-singleuser
+    storage:
+      type: none
+      extraVolumes:
+      - name: home
+        persistentVolumeClaim:
+          claimName: home
+      - name: shared
+        persistentVolumeClaim:
+          claimName: shared
+      extraVolumeMounts:
+        - name: home
+          mountPath: "/home"
+          subPath: "{username}"
+        - name: shared
+          mountPath: "/shared"
+          subPath: "shared"
+      #
+      # https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/main/jupyterhub/values.yaml#L138
+      #
+      # MAYBE:
+      # extraVolumes:
+      #   - name: userdata-pv
+      #     persistentVolumeClaim:
+      #       claimName: userdata-pvc
+      # extraVolumeMounts:
+      #   - name: userdata-pv
+      #     mountPath: /pv
+    uid: 1000
+    fsGid: 100
+    initContainers:
+      - name: nfs-fixer
+        image: alpine
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - name: home
+          mountPath: "/home"
+          subPath: "{username}"
+        - name: shared
+          mountPath: "/shared"
+          subPath: "shared"
+        command:
+        - sh
+        - -c
+        - (chmod 0775 /home; chown -R 1000:100 /home;chmod 0775 /shared; chown -R 1000:100 /shared)  
