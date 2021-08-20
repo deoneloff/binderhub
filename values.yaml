@@ -73,6 +73,17 @@ jupyterhub:
     db:
       type: sqlite-memory
 
+  # auth:
+  #   type: github
+  #   github:
+  #     callbackUrl: "https://notebooks-test.gesis.org/hub/oauth_callback"
+  #     clientId: "###secret###"
+  #     clientSecret: "###secret###"
+  #   scopes:
+  #     - "read:user"
+  #   admin:
+  #     users: ['bitnik', 'arnim']
+
   singleuser:
   # to make notebook servers aware of hub
     cmd: jupyterhub-singleuser
@@ -87,7 +98,7 @@ jupyterhub:
           claimName: shared
       extraVolumeMounts:
         - name: home
-          mountPath: "/home"
+          mountPath: "/home/jovyan"
           subPath: "{username}"
         - name: shared
           mountPath: "/shared"
@@ -120,4 +131,4 @@ jupyterhub:
         command:
         - sh
         - -c
-        - (chmod 0775 /home; chown -R 1000:100 /home;chmod 0775 /shared; chown -R 1000:100 /shared)  
+        - (ln -s /shared /home/jovyan/shared; chmod 0775 /home; chown -R 1000:100 /home;chmod 0775 /shared; chown -R 1000:100 /shared)  
